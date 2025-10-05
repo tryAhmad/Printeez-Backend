@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const rateLimit = require("express-rate-limit");
+const { specs, swaggerUi } = require("./config/swagger");
 
 const app = express();
 
@@ -15,6 +16,9 @@ const limiter = rateLimit({
 app.use(limiter);
 app.use(cors());
 app.use(express.json());
+
+// Swagger Documentation
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 
 // Import routes
 const userRoutes = require("./routes/user");
