@@ -26,28 +26,24 @@ const createTestUsers = async () => {
         name: "John Doe",
         email: "john@test.com",
         password: "password123",
-        address: "123 Main Street, New York, NY 10001",
         isAdmin: false,
       },
       {
         name: "Jane Smith",
         email: "jane@test.com",
         password: "password123",
-        address: "456 Oak Avenue, Los Angeles, CA 90210",
         isAdmin: false,
       },
       {
         name: "Mike Johnson",
         email: "mike@test.com",
         password: "password123",
-        address: "789 Pine Road, Chicago, IL 60601",
         isAdmin: false,
       },
       {
         name: "Sarah Wilson",
         email: "sarah@test.com",
         password: "password123",
-        address: "321 Elm Street, Houston, TX 77001",
         isAdmin: false,
       },
     ];

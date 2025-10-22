@@ -24,7 +24,6 @@ const createAdminUser = async () => {
       name: "Admin User",
       email: "admin@printeez.com",
       password: "admin123456", // Will be hashed by the pre-save middleware
-      address: "123 Admin Street, Admin City",
       isAdmin: true,
     });
 

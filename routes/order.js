@@ -96,10 +96,13 @@ router.post("/", auth, async (req, res) => {
     });
     await order.save();
 
-    // Reduce stock
+    // Reduce stock and increment sales count
     for (const item of products) {
       await Product.findByIdAndUpdate(item.productId, {
-        $inc: { stock: -item.quantity },
+        $inc: {
+          stock: -item.quantity,
+          salesCount: item.quantity, // Track sales for top selling
+        },
       });
     }
 

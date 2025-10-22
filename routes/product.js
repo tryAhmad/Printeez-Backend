@@ -6,6 +6,238 @@ const admin = require("../middleware/admin");
 
 /**
  * @swagger
+ * /api/products/category/{category}:
+ *   get:
+ *     summary: Get T-shirts by category
+ *     tags: [Products]
+ *     security: []
+ *     parameters:
+ *       - in: path
+ *         name: category
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [urban, typography, abstract, anime]
+ *         description: Product category
+ *     responses:
+ *       200:
+ *         description: List of T-shirts in category
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Product'
+ *       400:
+ *         description: Invalid category
+ *       500:
+ *         description: Server error
+ */
+// GET /products/category/:category - get products by category
+router.get("/category/:category", async (req, res) => {
+  try {
+    const validCategories = ["urban", "typography", "abstract", "anime"];
+    const category = req.params.category.toLowerCase();
+
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({
+        error:
+          "Invalid category. Must be one of: urban, typography, abstract, anime",
+      });
+    }
+
+    const products = await Product.find({ category });
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch products by category." });
+  }
+});
+
+/**
+ * @swagger
+ * /api/products/top-selling:
+ *   get:
+ *     summary: Get top selling T-shirts
+ *     tags: [Products]
+ *     security: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: number
+ *           default: 10
+ *         description: Number of top selling products to return
+ *     responses:
+ *       200:
+ *         description: List of top selling T-shirts
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Product'
+ *       500:
+ *         description: Server error
+ */
+// GET /products/top-selling - get top selling products
+router.get("/top-selling", async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const products = await Product.find().sort({ salesCount: -1 }).limit(limit);
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch top selling products." });
+  }
+});
+
+/**
+ * @swagger
+ * /api/products/new-arrivals:
+ *   get:
+ *     summary: Get new arrival T-shirts
+ *     tags: [Products]
+ *     security: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: number
+ *           default: 10
+ *         description: Number of new arrivals to return
+ *       - in: query
+ *         name: days
+ *         schema:
+ *           type: number
+ *           default: 30
+ *         description: Number of days to consider as "new"
+ *     responses:
+ *       200:
+ *         description: List of new arrival T-shirts
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Product'
+ *       500:
+ *         description: Server error
+ */
+// GET /products/new-arrivals - get new arrival products
+router.get("/new-arrivals", async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const days = parseInt(req.query.days) || 30;
+
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+
+    const products = await Product.find({
+      createdAt: { $gte: cutoffDate },
+    })
+      .sort({ createdAt: -1 })
+      .limit(limit);
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch new arrivals." });
+  }
+});
+
+/**
+ * @swagger
+ * /api/products/search:
+ *   get:
+ *     summary: Search T-shirts by name or description
+ *     tags: [Products]
+ *     security: []
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Search query for product name or description
+ *         example: "shirt"
+ *       - in: query
+ *         name: minPrice
+ *         schema:
+ *           type: number
+ *         description: Minimum price filter
+ *       - in: query
+ *         name: maxPrice
+ *         schema:
+ *           type: number
+ *         description: Maximum price filter
+ *       - in: query
+ *         name: size
+ *         schema:
+ *           type: string
+ *         description: Size filter (Small, Large, Extra Large)
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *           enum: [urban, typography, abstract, anime]
+ *         description: Category filter
+ *     responses:
+ *       200:
+ *         description: Search results
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Product'
+ *       400:
+ *         description: Search query required
+ *       500:
+ *         description: Server error
+ */
+// GET /products/search - search products
+router.get("/search", async (req, res) => {
+  try {
+    const { q, minPrice, maxPrice, size, category } = req.query;
+
+    if (!q) {
+      return res.status(400).json({ error: "Search query (q) is required" });
+    }
+
+    // Build search criteria
+    let searchCriteria = {
+      $or: [
+        { name: { $regex: q, $options: "i" } },
+        { description: { $regex: q, $options: "i" } },
+      ],
+    };
+
+    // Add price filters
+    if (minPrice || maxPrice) {
+      searchCriteria.price = {};
+      if (minPrice) searchCriteria.price.$gte = Number(minPrice);
+      if (maxPrice) searchCriteria.price.$lte = Number(maxPrice);
+    }
+
+    // Add size filter
+    if (size) {
+      searchCriteria.size = { $regex: size, $options: "i" };
+    }
+
+    // Add category filter
+    if (category) {
+      const validCategories = ["urban", "typography", "abstract", "anime"];
+      if (validCategories.includes(category.toLowerCase())) {
+        searchCriteria.category = category.toLowerCase();
+      }
+    }
+
+    const products = await Product.find(searchCriteria);
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ error: "Search failed." });
+  }
+});
+
+/**
+ * @swagger
  * /api/products:
  *   get:
  *     summary: Get all T-shirts

@@ -50,7 +50,7 @@ const options = {
             },
             address: {
               type: "string",
-              description: "User address",
+              description: "User address (optional, provided during order)",
             },
             isAdmin: {
               type: "boolean",
@@ -66,7 +66,7 @@ const options = {
         },
         Product: {
           type: "object",
-          required: ["name", "price", "size", "stock"],
+          required: ["name", "price", "category", "size", "stock"],
           properties: {
             _id: {
               type: "string",
@@ -84,13 +84,24 @@ const options = {
               type: "number",
               description: "Product price",
             },
+            category: {
+              type: "string",
+              enum: ["urban", "typography", "abstract", "anime"],
+              description: "T-shirt category",
+            },
             size: {
               type: "string",
-              description: "T-shirt size (S, M, L, XL)",
+              enum: ["Small", "Large", "Extra Large"],
+              description: "T-shirt size",
             },
             stock: {
               type: "number",
               description: "Available quantity",
+            },
+            salesCount: {
+              type: "number",
+              description: "Total number of items sold",
+              default: 0,
             },
             imageUrl: {
               type: "string",
@@ -163,6 +174,84 @@ const options = {
             error: {
               type: "string",
               description: "Error message",
+            },
+          },
+        },
+        Cart: {
+          type: "object",
+          properties: {
+            _id: {
+              type: "string",
+              description: "Auto-generated cart ID",
+            },
+            userId: {
+              type: "string",
+              description: "Reference to User ID",
+            },
+            items: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  productId: {
+                    type: "string",
+                    description: "Reference to Product ID",
+                  },
+                  quantity: {
+                    type: "number",
+                    description: "Quantity of product in cart",
+                  },
+                  addedAt: {
+                    type: "string",
+                    format: "date-time",
+                    description: "Date when item was added",
+                  },
+                },
+              },
+            },
+            totalAmount: {
+              type: "number",
+              description: "Total cart amount (calculated)",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              description: "Last update date",
+            },
+          },
+        },
+        Wishlist: {
+          type: "object",
+          properties: {
+            _id: {
+              type: "string",
+              description: "Auto-generated wishlist ID",
+            },
+            userId: {
+              type: "string",
+              description: "Reference to User ID",
+            },
+            products: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  productId: {
+                    type: "string",
+                    description: "Reference to Product ID",
+                  },
+                  addedAt: {
+                    type: "string",
+                    format: "date-time",
+                    description: "Date when item was added",
+                  },
+                },
+              },
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              description: "Last update date",
             },
           },
         },
