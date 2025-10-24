@@ -23,9 +23,35 @@ app.use(
   })
 );
 
-// CORS configuration
+// CORS configuration - Support multiple origins
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://printeez-frontend.vercel.app",
+  "https://printeez.studio",
+  "https://www.printeez.studio",
+  process.env.FRONTEND_URL,
+].filter(Boolean); // Remove undefined values
+
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || "http://localhost:3000",
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Normalize origin by removing trailing slash
+    const normalizedOrigin = origin.replace(/\/$/, '');
+    
+    // Check if normalized origin is in allowed list
+    const isAllowed = allowedOrigins.some(allowed => {
+      const normalizedAllowed = allowed.replace(/\/$/, '');
+      return normalizedAllowed === normalizedOrigin;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
