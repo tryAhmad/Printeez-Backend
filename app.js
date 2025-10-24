@@ -74,6 +74,20 @@ const authLimiter = rateLimit({
 // Apply general rate limiter to all routes
 app.use("/api/", generalLimiter);
 
+// Root endpoint
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Printeez API is running",
+    version: "1.0.0",
+    endpoints: {
+      health: "/health",
+      api: "/api",
+      docs: "/api-docs",
+    },
+  });
+});
+
 // Health check endpoint
 app.get("/health", (req, res) => {
   res.status(200).json({
