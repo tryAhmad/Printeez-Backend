@@ -49,8 +49,20 @@ const productSchemas = {
     category: Joi.string()
       .valid("urban", "typography", "abstract", "anime")
       .required(),
-    size: Joi.string().valid("Small", "Large", "Extra Large").required(),
-    stock: Joi.number().integer().min(0).required(),
+    sizes: Joi.array()
+      .items(
+        Joi.object({
+          size: Joi.string()
+            .valid("Small", "Large", "Extra Large")
+            .required(),
+          stock: Joi.number().integer().min(0).required(),
+        })
+      )
+      .min(1)
+      .required()
+      .messages({
+        "array.min": "At least one size must be provided",
+      }),
     imageUrl: Joi.string().uri(),
   }),
 
@@ -59,8 +71,12 @@ const productSchemas = {
     description: Joi.string().max(500),
     price: Joi.number().positive(),
     category: Joi.string().valid("urban", "typography", "abstract", "anime"),
-    size: Joi.string().valid("Small", "Large", "Extra Large"),
-    stock: Joi.number().integer().min(0),
+    sizes: Joi.array().items(
+      Joi.object({
+        size: Joi.string().valid("Small", "Large", "Extra Large").required(),
+        stock: Joi.number().integer().min(0).required(),
+      })
+    ),
     imageUrl: Joi.string().uri(),
   }).min(1),
 };
@@ -72,6 +88,9 @@ const orderSchemas = {
       .items(
         Joi.object({
           productId: Joi.string().hex().length(24).required(),
+          size: Joi.string()
+            .valid("Small", "Large", "Extra Large")
+            .required(),
           quantity: Joi.number().integer().min(1).required(),
         })
       )
@@ -85,6 +104,7 @@ const orderSchemas = {
 const cartSchemas = {
   addItem: Joi.object({
     productId: Joi.string().hex().length(24).required(),
+    size: Joi.string().valid("Small", "Large", "Extra Large").required(),
     quantity: Joi.number().integer().min(1).max(100).required(),
   }),
 

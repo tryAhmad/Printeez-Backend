@@ -6,6 +6,11 @@ const cartItemSchema = new mongoose.Schema({
     ref: "Product",
     required: true,
   },
+  size: {
+    type: String,
+    required: true,
+    enum: ["Small", "Large", "Extra Large"],
+  },
   quantity: { type: Number, required: true, min: 1 },
   addedAt: { type: Date, default: Date.now },
 });

@@ -66,7 +66,7 @@ const options = {
         },
         Product: {
           type: "object",
-          required: ["name", "price", "category", "size", "stock"],
+          required: ["name", "price", "category", "sizes"],
           properties: {
             _id: {
               type: "string",
@@ -89,23 +89,40 @@ const options = {
               enum: ["urban", "typography", "abstract", "anime"],
               description: "T-shirt category",
             },
-            size: {
-              type: "string",
-              enum: ["Small", "Large", "Extra Large"],
-              description: "T-shirt size",
-            },
-            stock: {
-              type: "number",
-              description: "Available quantity",
+            sizes: {
+              type: "array",
+              description: "Available sizes with stock",
+              items: {
+                type: "object",
+                properties: {
+                  size: {
+                    type: "string",
+                    enum: ["Small", "Large", "Extra Large"],
+                    description: "Size option",
+                  },
+                  stock: {
+                    type: "number",
+                    description: "Stock available for this size",
+                  },
+                },
+              },
             },
             salesCount: {
               type: "number",
-              description: "Total number of items sold",
+              description: "Total number of items sold across all sizes",
               default: 0,
             },
             imageUrl: {
               type: "string",
               description: "Product image URL",
+            },
+            inStock: {
+              type: "boolean",
+              description: "Whether any size is available",
+            },
+            totalStock: {
+              type: "number",
+              description: "Total stock across all sizes",
             },
             createdAt: {
               type: "string",

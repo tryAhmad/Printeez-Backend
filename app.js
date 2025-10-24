@@ -11,7 +11,7 @@ const errorHandler = require("./middleware/errorHandler");
 const app = express();
 
 // Security Middlewares
-app.use(helmet()); // Security headers
+// app.use(helmet()); // Security headers
 app.use(
   helmet.contentSecurityPolicy({
     directives: {
@@ -30,7 +30,7 @@ const corsOptions = {
   credentials: true,
   optionsSuccessStatus: 200,
 };
-app.use(cors(corsOptions));
+app.use(cors());
 
 // Response compression
 app.use(compression());
@@ -45,6 +45,8 @@ if (process.env.NODE_ENV !== "production") {
 // Body parser
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+app.use("/uploads", express.static("public/uploads"));
 
 // Rate limiting - Different limits for different routes
 const generalLimiter = rateLimit({
@@ -90,6 +92,7 @@ const orderRoutes = require("./routes/order");
 const cartRoutes = require("./routes/cart");
 const wishlistRoutes = require("./routes/wishlist");
 const analyticsRoutes = require("./routes/analytics");
+const adminRoutes = require("./routes/admin");
 
 // Mount routes
 app.use("/api/users", authLimiter, userRoutes); // Stricter rate limit for auth
@@ -98,6 +101,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Handle undefined routes
 app.all("*", (req, res) => {

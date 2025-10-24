@@ -468,4 +468,48 @@ router.delete("/:id", auth, admin, async (req, res) => {
   }
 });
 
+// POST /products/:id/rate - rate a product (authenticated users only)
+router.post("/:id/rate", auth, async (req, res) => {
+  try {
+    const { rating } = req.body;
+
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ error: "Rating must be between 1 and 5" });
+    }
+
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    // Check if user already rated this product
+    const existingRatingIndex = product.ratings.findIndex(
+      (r) => r.userId.toString() === req.user._id.toString()
+    );
+
+    if (existingRatingIndex !== -1) {
+      // Update existing rating
+      product.ratings[existingRatingIndex].rating = rating;
+      product.ratings[existingRatingIndex].createdAt = Date.now();
+    } else {
+      // Add new rating
+      product.ratings.push({
+        userId: req.user._id,
+        rating: rating,
+      });
+    }
+
+    await product.save();
+
+    res.json({
+      message: "Rating submitted successfully",
+      averageRating: product.averageRating,
+      totalRatings: product.totalRatings,
+    });
+  } catch (err) {
+    console.error("Rating error:", err);
+    res.status(500).json({ error: "Failed to submit rating" });
+  }
+});
+
 module.exports = router;

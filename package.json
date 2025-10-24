@@ -8,6 +8,7 @@
     "dev": "nodemon server.js",
     "seed": "node seedData.js",
     "seed-new": "node seedNewProducts.js",
+    "seed-multi": "node seedProductsMultiSize.js",
     "create-admin": "node createAdmin.js",
     "seed-orders": "node seedOrders.js",
     "create-test-users": "node createTestUsers.js"

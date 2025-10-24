@@ -15,7 +15,21 @@ const orderSchema = new mongoose.Schema(
           ref: "Product",
           required: true,
         },
+        // Snapshot fields for display without additional lookups
+        productName: { type: String },
+        price: { type: Number },
+        size: {
+          type: String,
+          required: true,
+          enum: ["Small", "Large", "Extra Large"],
+        },
         quantity: { type: Number, required: true, min: 1 },
+        rating: {
+          type: Number,
+          min: 1,
+          max: 5,
+          default: null,
+        },
       },
     ],
     totalAmount: { type: Number, required: true, min: 0 },

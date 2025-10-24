@@ -5,6 +5,7 @@ const User = require("../models/User");
 const { validate, userSchemas } = require("../middleware/validation");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/AppError");
+const auth = require("../middleware/auth");
 
 /**
  * @swagger
@@ -174,3 +175,89 @@ router.post(
 );
 
 module.exports = router;
+
+/**
+ * @swagger
+ * /api/users/profile:
+ *   get:
+ *     summary: Get current user's profile
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Current user profile
+ *       401:
+ *         description: Unauthorized
+ */
+router.get(
+  "/profile",
+  auth,
+  catchAsync(async (req, res) => {
+    const user = await User.findById(req.user._id);
+    if (!user) throw new AppError("User not found", 404);
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      address: user.address || "",
+      isAdmin: user.isAdmin || false,
+    });
+  })
+);
+
+/**
+ * @swagger
+ * /api/users/profile:
+ *   put:
+ *     summary: Update current user's profile
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               address:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Profile updated
+ *       400:
+ *         description: Invalid data
+ *       401:
+ *         description: Unauthorized
+ */
+router.put(
+  "/profile",
+  auth,
+  catchAsync(async (req, res) => {
+    const { name, address } = req.body || {};
+
+    const user = await User.findById(req.user._id);
+    if (!user) throw new AppError("User not found", 404);
+
+    // Allow updating only name and address (email changes are not allowed here)
+    if (typeof name === "string" && name.trim().length > 0) {
+      user.name = name.trim();
+    }
+    if (typeof address === "string") {
+      user.address = address.trim();
+    }
+
+    await user.save();
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      address: user.address || "",
+      isAdmin: user.isAdmin || false,
+    });
+  })
+);

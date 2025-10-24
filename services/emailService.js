@@ -29,7 +29,7 @@ const sendOrderConfirmation = async (
           <div style="background-color: #f5f5f5; padding: 20px; margin: 20px 0; border-radius: 5px;">
             <h3 style="margin-top: 0;">Order Details:</h3>
             <p><strong>Order ID:</strong> ${orderDetails.orderId}</p>
-            <p><strong>Total Amount:</strong> $${orderDetails.totalAmount}</p>
+            <p><strong>Total Amount:</strong> PKR ${orderDetails.totalAmount}</p>
             <p><strong>Payment Method:</strong> ${
               orderDetails.paymentMethod
             }</p>
@@ -47,7 +47,7 @@ const sendOrderConfirmation = async (
               <div style="border-bottom: 1px solid #eee; padding: 10px 0;">
                 <p><strong>Product:</strong> ${item.productName}</p>
                 <p><strong>Quantity:</strong> ${item.quantity}</p>
-                <p><strong>Price:</strong> $${item.price}</p>
+                <p><strong>Price:</strong> PKR ${item.price}</p>
               </div>
             `
               )

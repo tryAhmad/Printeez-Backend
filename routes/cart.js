@@ -109,16 +109,53 @@ router.get("/", auth, async (req, res) => {
 // POST /cart - add item to cart
 router.post("/", auth, async (req, res) => {
   try {
-    const { productId, quantity } = req.body;
+    const { productId, size, quantity } = req.body;
 
-    // Validate product exists and has sufficient stock
+    console.log("Received cart request:", { productId, size, quantity });
+
+    // Validate input
+    if (!productId || !size || !quantity) {
+      console.log(
+        "Missing fields - productId:",
+        productId,
+        "size:",
+        size,
+        "quantity:",
+        quantity
+      );
+      return res.status(400).json({
+        error: "Missing required fields: productId, size, quantity",
+      });
+    }
+
+    // Validate product exists and has sufficient stock for the size
     const product = await Product.findById(productId);
     if (!product) {
       return res.status(404).json({ error: "Product not found" });
     }
 
-    if (product.stock < quantity) {
-      return res.status(400).json({ error: "Insufficient stock" });
+    // Check if product has sizes array
+    if (!product.sizes || !Array.isArray(product.sizes)) {
+      console.error("Product has no sizes array:", productId);
+      return res.status(400).json({
+        error: "Product size information is not available",
+      });
+    }
+
+    // Check if size exists and has sufficient stock
+    const sizeData = product.sizes.find((s) => s.size === size);
+    if (!sizeData) {
+      return res.status(400).json({
+        error: `Size ${size} not available for this product. Available sizes: ${product.sizes
+          .map((s) => s.size)
+          .join(", ")}`,
+      });
+    }
+
+    if (sizeData.stock < quantity) {
+      return res.status(400).json({
+        error: `Insufficient stock for size ${size}. Available: ${sizeData.stock}`,
+      });
     }
 
     // Find or create cart
@@ -127,18 +164,56 @@ router.post("/", auth, async (req, res) => {
       cart = new Cart({ userId: req.user._id, items: [] });
     }
 
-    // Check if item already exists in cart
+    // Sanitize legacy items (from before size was required)
+    if (cart.items && cart.items.length > 0) {
+      const beforeCount = cart.items.length;
+      cart.items = cart.items.filter((item) => !!item.size);
+      const afterCount = cart.items.length;
+      if (afterCount !== beforeCount) {
+        console.warn(
+          `Removed ${
+            beforeCount - afterCount
+          } legacy cart item(s) missing size for user ${req.user._id}`
+        );
+      }
+    }
+
+    // Check if item with same product and size already exists in cart
     const existingItemIndex = cart.items.findIndex(
-      (item) => item.productId.toString() === productId
+      (item) => item.productId.toString() === productId && item.size === size
     );
 
     if (existingItemIndex > -1) {
       // Update quantity
-      cart.items[existingItemIndex].quantity += quantity;
+      const newQuantity = cart.items[existingItemIndex].quantity + quantity;
+      if (sizeData.stock < newQuantity) {
+        return res.status(400).json({
+          error: `Cannot add more. Total would exceed available stock (${sizeData.stock})`,
+        });
+      }
+      cart.items[existingItemIndex].quantity = newQuantity;
     } else {
       // Add new item
-      cart.items.push({ productId, quantity });
+      const newItem = {
+        productId: productId,
+        size: size,
+        quantity: quantity,
+      };
+      console.log("Adding new item to cart:", newItem);
+      console.log("Type of size:", typeof size);
+      console.log("Size value:", size);
+      console.log("Size length:", size ? size.length : "null");
+      cart.items.push(newItem);
     }
+
+    console.log(
+      "Cart items before save:",
+      cart.items.map((item) => ({
+        productId: item.productId,
+        size: item.size,
+        quantity: item.quantity,
+      }))
+    );
 
     await cart.save();
 
@@ -153,7 +228,10 @@ router.post("/", auth, async (req, res) => {
       totalAmount: Math.round(totalAmount * 100) / 100,
     });
   } catch (err) {
-    res.status(500).json({ error: "Failed to add item to cart." });
+    console.error("Error adding item to cart:", err);
+    res
+      .status(500)
+      .json({ error: "Failed to add item to cart.", details: err.message });
   }
 });
 
@@ -308,11 +386,22 @@ router.delete("/clear", auth, async (req, res) => {
       return res.status(404).json({ error: "Cart not found" });
     }
 
-    cart.items = [];
-    await cart.save();
+    // Delete the cart document entirely to avoid any stale items reappearing
+    await Cart.deleteOne({ _id: cart._id });
 
-    res.json({ message: "Cart cleared successfully", cart });
+    // Respond with an empty cart payload
+    res.json({
+      message: "Cart cleared successfully",
+      cart: {
+        _id: cart._id,
+        userId: cart.userId,
+        items: [],
+        updatedAt: new Date().toISOString(),
+      },
+      totalAmount: 0,
+    });
   } catch (err) {
+    console.error("Clear cart error:", err);
     res.status(500).json({ error: "Failed to clear cart." });
   }
 });
