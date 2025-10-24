@@ -36,16 +36,16 @@ const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
+
     // Normalize origin by removing trailing slash
-    const normalizedOrigin = origin.replace(/\/$/, '');
-    
+    const normalizedOrigin = origin.replace(/\/$/, "");
+
     // Check if normalized origin is in allowed list
-    const isAllowed = allowedOrigins.some(allowed => {
-      const normalizedAllowed = allowed.replace(/\/$/, '');
+    const isAllowed = allowedOrigins.some((allowed) => {
+      const normalizedAllowed = allowed.replace(/\/$/, "");
       return normalizedAllowed === normalizedOrigin;
     });
-    
+
     if (isAllowed) {
       callback(null, true);
     } else {
