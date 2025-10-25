@@ -291,10 +291,21 @@ router.get("/", async (req, res) => {
  *       500:
  *         description: Server error
  */
-// GET /products/:id - get single T-shirt
+// GET /products/:id - get single T-shirt (supports both ID and slug)
 router.get("/:id", async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const identifier = req.params.id;
+
+    // Try to find by slug first, then by ID
+    let product = await Product.findOne({ slug: identifier });
+
+    if (!product) {
+      // Check if it's a valid MongoDB ObjectId before trying to find by ID
+      if (identifier.match(/^[0-9a-fA-F]{24}$/)) {
+        product = await Product.findById(identifier);
+      }
+    }
+
     if (!product) return res.status(404).json({ error: "Product not found." });
     res.json(product);
   } catch (err) {

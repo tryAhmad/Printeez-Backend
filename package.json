@@ -11,7 +11,8 @@
     "seed-multi": "node seedProductsMultiSize.js",
     "create-admin": "node createAdmin.js",
     "seed-orders": "node seedOrders.js",
-    "create-test-users": "node createTestUsers.js"
+    "create-test-users": "node createTestUsers.js",
+    "generate-slugs": "node scripts/generateSlugs.js"
   },
   "keywords": [
     "express",

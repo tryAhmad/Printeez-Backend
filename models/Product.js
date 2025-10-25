@@ -3,6 +3,13 @@ const mongoose = require("mongoose");
 const productSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
+    slug: {
+      type: String,
+      unique: true,
+      lowercase: true,
+      trim: true,
+      index: true,
+    },
     description: { type: String, trim: true },
     price: { type: Number, required: true, min: 0 },
     category: {
@@ -50,6 +57,20 @@ const productSchema = new mongoose.Schema(
     timestamps: true, // Adds createdAt and updatedAt automatically
   }
 );
+
+// Pre-save hook to generate slug from name
+productSchema.pre("save", function (next) {
+  if (this.isModified("name") && !this.slug) {
+    // Generate slug: lowercase, replace spaces with hyphens, remove special chars
+    this.slug = this.name
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, "") // Remove special characters
+      .replace(/\s+/g, "-") // Replace spaces with hyphens
+      .replace(/-+/g, "-"); // Replace multiple hyphens with single hyphen
+  }
+  next();
+});
 
 // Virtual to check if product is in stock (any size available)
 productSchema.virtual("inStock").get(function () {
