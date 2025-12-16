@@ -74,25 +74,25 @@ router.post("/", auth, async (req, res) => {
     // Validate stock for all products and sizes
     for (const item of products) {
       const product = await Product.findById(item.productId);
-
+      
       if (!product) {
-        return res.status(400).json({
-          error: `Product not found: ${item.productId}`,
+        return res.status(400).json({ 
+          error: `Product not found: ${item.productId}` 
         });
       }
 
       // Find the size in the product's sizes array
-      const sizeData = product.sizes.find((s) => s.size === item.size);
-
+      const sizeData = product.sizes.find(s => s.size === item.size);
+      
       if (!sizeData) {
-        return res.status(400).json({
-          error: `Size ${item.size} not available for ${product.name}`,
+        return res.status(400).json({ 
+          error: `Size ${item.size} not available for ${product.name}` 
         });
       }
 
       if (sizeData.stock < item.quantity) {
-        return res.status(400).json({
-          error: `Insufficient stock for ${product.name} (${item.size}). Available: ${sizeData.stock}`,
+        return res.status(400).json({ 
+          error: `Insufficient stock for ${product.name} (${item.size}). Available: ${sizeData.stock}` 
         });
       }
 
@@ -106,18 +106,9 @@ router.post("/", auth, async (req, res) => {
       });
     }
 
-    // Persist products with snapshot fields (name, price)
-    const persistedProducts = orderProducts.map((p) => ({
-      productId: p.productId,
-      productName: p.productName,
-      price: p.price,
-      size: p.size,
-      quantity: p.quantity,
-    }));
-
     const order = new Order({
       userId: req.user._id,
-      products: persistedProducts,
+      products,
       totalAmount,
       address,
       paymentMethod: "COD",
@@ -127,9 +118,9 @@ router.post("/", auth, async (req, res) => {
     // Reduce stock for specific sizes and increment sales count
     for (const item of products) {
       await Product.findOneAndUpdate(
-        {
+        { 
           _id: item.productId,
-          "sizes.size": item.size,
+          "sizes.size": item.size 
         },
         {
           $inc: {
@@ -189,33 +180,8 @@ router.post("/", auth, async (req, res) => {
 // GET /orders - get user's own orders
 router.get("/", auth, async (req, res) => {
   try {
-    const orders = await Order.find({ userId: req.user._id })
-      .sort({ createdAt: -1 })
-      .populate("products.productId")
-      .lean();
-
-    const userId = req.user._id;
-
-    // Enrich each product line with snapshot fields for ease of rendering
-    const enriched = orders.map((order) => ({
-      ...order,
-      products: order.products.map((item) => {
-        return {
-          ...item,
-          productName:
-            item.productId && typeof item.productId === "object"
-              ? item.productId.name
-              : undefined,
-          price:
-            item.productId && typeof item.productId === "object"
-              ? item.productId.price
-              : undefined,
-          userRating: item.rating || null, // Use order-specific rating
-        };
-      }),
-    }));
-
-    res.json(enriched);
+    const orders = await Order.find({ userId: req.user._id });
+    res.json(orders);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch orders." });
   }
@@ -315,79 +281,6 @@ router.put("/:id/status", auth, admin, async (req, res) => {
     res.json(order);
   } catch (err) {
     res.status(400).json({ error: "Failed to update order status." });
-  }
-});
-
-// POST /orders/:orderId/rate/:productId - Rate a product in a specific order
-router.post("/:orderId/rate/:productId", auth, async (req, res) => {
-  try {
-    const { orderId, productId } = req.params;
-    const { rating } = req.body;
-
-    // Validate rating
-    if (!rating || rating < 1 || rating > 5) {
-      return res.status(400).json({ error: "Rating must be between 1 and 5" });
-    }
-
-    // Find the order and verify it belongs to the user
-    const order = await Order.findOne({ _id: orderId, userId: req.user._id });
-    if (!order) {
-      return res.status(404).json({ error: "Order not found" });
-    }
-
-    // Verify order is delivered
-    if (order.status.toLowerCase() !== "delivered") {
-      return res
-        .status(400)
-        .json({ error: "Can only rate products from delivered orders" });
-    }
-
-    // Find the product in the order
-    const productItem = order.products.find(
-      (item) => item.productId.toString() === productId
-    );
-    if (!productItem) {
-      return res.status(404).json({ error: "Product not found in this order" });
-    }
-
-    // Update the rating for this specific product in this order
-    productItem.rating = rating;
-    await order.save();
-
-    // Also update the product's ratings array for overall average
-    const product = await Product.findById(productId);
-    if (product) {
-      // Check if this specific order+user combination already has a rating
-      const existingRatingIndex = product.ratings.findIndex(
-        (r) =>
-          r.userId.toString() === req.user._id.toString() &&
-          r.orderId &&
-          r.orderId.toString() === orderId
-      );
-
-      if (existingRatingIndex > -1) {
-        // Update existing rating for this order
-        product.ratings[existingRatingIndex].rating = rating;
-        product.ratings[existingRatingIndex].createdAt = new Date();
-      } else {
-        // Add new rating for this order
-        product.ratings.push({
-          userId: req.user._id,
-          orderId: orderId,
-          rating,
-          createdAt: new Date(),
-        });
-      }
-      await product.save();
-    }
-
-    res.json({
-      message: "Rating submitted successfully",
-      rating: productItem.rating,
-    });
-  } catch (error) {
-    console.error("Rating error:", error);
-    res.status(500).json({ error: "Failed to submit rating" });
   }
 });
 

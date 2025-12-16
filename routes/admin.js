@@ -120,7 +120,9 @@ router.get("/orders", async (req, res) => {
     const orders = await Order.find({})
       .populate("userId", "name email")
       .populate("products.productId", "name imageUrl price")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean(); // Convert to plain JavaScript objects to avoid serialization issues
+
     res.json(orders);
   } catch (err) {
     console.error("Fetch orders error:", err);
