@@ -134,6 +134,7 @@ const cartRoutes = require("./routes/cart");
 const wishlistRoutes = require("./routes/wishlist");
 const analyticsRoutes = require("./routes/analytics");
 const adminRoutes = require("./routes/admin");
+const aiRoutes = require("./routes/ai");
 
 // Mount routes
 app.use("/api/users", authLimiter, userRoutes); // Stricter rate limit for auth
@@ -143,6 +144,7 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/ai", aiRoutes);
 
 // Handle undefined routes
 app.all("*", (req, res) => {
